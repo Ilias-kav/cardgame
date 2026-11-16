@@ -1,0 +1,2 @@
+# Keep LF line endings in the repo, even when developing on Windows.
+* text=auto eol=lf

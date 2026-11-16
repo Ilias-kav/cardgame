@@ -1,0 +1,19 @@
+# Caddy gets and renews the HTTPS certificate for {$DOMAIN} by itself (Let's Encrypt),
+# redirects HTTP to HTTPS, and forwards everything (including the /ws WebSocket) to the app.
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# The client is a single bundled script and stylesheet from this origin and talks only to it.
+		# 'unsafe-inline' for styles is needed for the hit-point bars' inline widths.
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://{$DOMAIN}; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}

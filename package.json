@@ -1,0 +1,20 @@
+{
+  "name": "@cardgame/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "watch": "tsx src/index.ts watch",
+    "play": "tsx src/index.ts play",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"no tests in cli\""
+  },
+  "dependencies": {
+    "@cardgame/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,23 @@
+# Local development database. Start with: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: cardgame
+      POSTGRES_PASSWORD: cardgame
+      POSTGRES_DB: cardgame
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      # Creates the separate test database on first start only
+      # (to re-run: docker compose down -v, which also wipes your data).
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cardgame -d cardgame"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  dbdata:

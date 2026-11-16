@@ -1,0 +1,65 @@
+# Production stack: PostgreSQL + the app + Caddy (automatic HTTPS).
+#
+#   cp .env.production.example .env.production   # then edit it
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#
+# See docs/DEPLOY.md.
+name: cardgame
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cardgame
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: cardgame
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cardgame -d cardgame"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    # No ports are published: only the app can reach the database.
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://cardgame:${POSTGRES_PASSWORD}@db:5432/cardgame
+      TRUST_PROXY: "true"
+      ALLOWED_ORIGINS: https://${DOMAIN:?set DOMAIN in .env.production}
+      TURN_TIMEOUT_SECONDS: ${TURN_TIMEOUT_SECONDS:-120}
+      DISCONNECT_GRACE_SECONDS: ${DISCONNECT_GRACE_SECONDS:-60}
+    logging: *logging
+    # No ports are published either: Caddy reaches it on the internal network.
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # keeps the TLS certificates between restarts
+      - caddy_config:/config
+    logging: *logging
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
